@@ -22,7 +22,7 @@ if config['enable_quick_dirty'] == True:
     config['ants'] = config['ants_quick_dirty']
 
 
-localrules: all, gen_init_avg_template, get_existing_template, set_init_template
+#localrules: all, gen_init_avg_template, get_existing_template, set_init_template
 
 
 rule all:

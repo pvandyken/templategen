@@ -18,8 +18,8 @@ participants_tsv: 'config/participants.tsv'
 
 #assumes that templateflow templates are linked in resources folder
 init_template:
-  T1w: 'resources/templateflow/tpl-MNI152NLin2009cAsym/tpl-MNI152NLin2009cAsym_res-01_T1w.nii.gz'
-  T2w: 'resources/templateflow/tpl-MNI152NLin2009cAsym/tpl-MNI152NLin2009cAsym_res-01_T2w.nii.gz'
+  T1w: 'resources/templateflow/tpl-MNI152NLin2009cAsym/tpl-MNI152NLin2009cAsym_res-01_desc-brain_T1w.nii.gz'
+  T2w: 'resources/templateflow/tpl-MNI152NLin2009cAsym/tpl-MNI152NLin2009cAsym_res-01_desc-brain_T2w.nii.gz'
   GM: 'resources/templateflow/tpl-MNI152NLin2009cAsym/tpl-MNI152NLin2009cAsym_res-01_label-GM_probseg.nii.gz'
   WM: 'resources/templateflow/tpl-MNI152NLin2009cAsym/tpl-MNI152NLin2009cAsym_res-01_label-WM_probseg.nii.gz'
 
@@ -59,7 +59,7 @@ ants:
       gradient_step: 0.25
 
 #set this to enable quick and dirty ants parameters
-enable_quick_dirty: False
+enable_quick_dirty: True
 
 #for testing, runs in less than a minute 
 ants_quick_dirty:

@@ -15,7 +15,6 @@ rule get_existing_template:
     input: lambda wildcards: config['init_template'][wildcards.channel]
     output: 'results/iter_0/init/existing_template_{channel}.nii.gz'
     log: 'logs/get_existing_template_{channel}.log'
-    container: config['singularity']['ants']
     shell: 'cp -v {input} {output} &> {log}'
 
 
