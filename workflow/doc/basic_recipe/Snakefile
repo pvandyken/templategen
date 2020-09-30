@@ -1,0 +1,35 @@
+
+images = ['A','B','C']
+
+max_iters = 4
+
+#need this to make sure iterations don't go below 0!
+wildcard_constraints:
+    iteration="[0-9]+"
+
+rule all:
+    input: 'iter_{iteration}/template.nii.gz'.format(iteration=max_iters)
+
+rule init_template:
+#    input: expand('inputs/{image}.nii.gz',image=images)
+    output: 'iter_0/template.nii.gz'
+    shell:
+        'init_template {input} {output}'
+
+rule reg_to_template:
+    input: 
+        template = 'iter_{iteration}/template.nii.gz',
+        image = 'inputs/{image}.nii.gz'
+    output:
+        warp = 'iter_{iteration}/{image}_warp_{iteration}.nii.gz'
+    shell:
+        'reg_to_template {input} {output}'
+
+rule update_template:
+    input: 
+        images = lambda wildcards: expand('iter_{iteration}/{image}_warp_{iteration}.nii.gz',image=images,iteration=int(wildcards.iteration)-1),
+        template = lambda wildcards: 'iter_{iteration}/template.nii.gz'.format(iteration=int(wildcards.iteration)-1)
+    output:
+        template = 'iter_{iteration}/template.nii.gz'
+    shell:
+        'update_template {input} {output}'
