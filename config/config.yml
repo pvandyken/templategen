@@ -1,20 +1,33 @@
+#these can come from fmriprep:
+in_preproc_T1w: '/scratch/sudesnac/CamCAN/fmriprep_20.2.0/sub-{subject}/anat/sub-{subject}_desc-preproc_T1w.nii.gz'
+in_brainmask_T1w: '/scratch/sudesnac/CamCAN/fmriprep_20.2.0/sub-{subject}/anat/sub-{subject}_desc-brain_mask.nii.gz'
+
+#this can come from raw bids:
+in_raw_T2w: '/project/6050199/akhanf/ext-bids/cam-can/bids/combined/sub-{subject}/anat/sub-{subject}_T2w.nii.gz'
+
+#for template building - mix of fmriprep and internally processed-data
 in_images:
-  T1w: '/project/6007967/akhanf/cfmm-bids/data/Khan/SNSX_7T/deriv/gradcorrect_0.0.1h/sub-{subject}/anat/sub-{subject}_acq-MP2RAGE_run-01_T1w.nii.gz'
-  T2w: '/project/6007967/akhanf/cfmm-bids/data/Khan/SNSX_7T/deriv/prepT2space_v0.0.1f/sub-{subject}/anat/sub-{subject}_acq-SPACE_proc-prepT2_space-T1w_T2w.nii.gz'
+  T1w: 'results/sub-{subject}/sub-{subject}_desc-brain_T1w.nii.gz'
+  T2w: 'results/sub-{subject}/sub-{subject}_space-T1w_desc-brain_T2w.nii.gz'
+  GM:  '/scratch/sudesnac/CamCAN/fmriprep_20.2.0/sub-{subject}/anat/sub-{subject}_label-GM_probseg.nii.gz'
+  WM:  '/scratch/sudesnac/CamCAN/fmriprep_20.2.0/sub-{subject}/anat/sub-{subject}_label-WM_probseg.nii.gz'
+
 
 participants_tsv: 'config/participants.tsv'
 
 
-#assumes that templateflow templates have been grabbed.. 
+#assumes that templateflow templates are linked in resources folder
 init_template:
-  T1w: '~/.cache/templateflow/tpl-MNI152NLin2009cAsym/tpl-MNI152NLin2009cAsym_res-01_T1w.nii.gz'
-  T2w: '~/.cache/templateflow/tpl-MNI152NLin2009cAsym/tpl-MNI152NLin2009cAsym_res-01_T2w.nii.gz'
+  T1w: 'resources/templateflow/tpl-MNI152NLin2009cAsym/tpl-MNI152NLin2009cAsym_res-01_T1w.nii.gz'
+  T2w: 'resources/templateflow/tpl-MNI152NLin2009cAsym/tpl-MNI152NLin2009cAsym_res-01_T2w.nii.gz'
+  GM: 'resources/templateflow/tpl-MNI152NLin2009cAsym/tpl-MNI152NLin2009cAsym_res-01_label-GM_probseg.nii.gz'
+  WM: 'resources/templateflow/tpl-MNI152NLin2009cAsym/tpl-MNI152NLin2009cAsym_res-01_label-WM_probseg.nii.gz'
 
 max_iters: 4
 
 
 
-resample_init_template: True #set this True to resample init template to below dims 
+resample_init_template: False #set this True to resample init template to below dims 
 # WARNING - changing this can significantly alter memory usage and run-time -- 
 resample_vox_dims: 
  - 0.7
@@ -24,7 +37,9 @@ resample_vox_dims:
 
 
 #should be at least 2.3.4 (includes --random-seed option, and fixes some argparsing bugs)
-ants_container:  '/project/6050199/akhanf/singularity/kaczmarj_ants_2.3.4.sif'
+singularity:
+  prepdwi: '/project/6050199/akhanf/singularity/bids-apps/khanlab_prepdwi_latest.sif'  
+  ants:  '/project/6050199/akhanf/singularity/kaczmarj_ants_2.3.4.sif'
 
 ants:
   dim: 3
