@@ -13,7 +13,30 @@ in_images:
   WM:  '/scratch/sudesnac/CamCAN/fmriprep_20.2.0/sub-{subject}/anat/sub-{subject}_label-WM_probseg.nii.gz'
 
 
-participants_tsv: 'config/participants.tsv'
+
+participants_tsv:
+  young: 'config/participants_young.tsv'
+  old: 'config/participants_old.tsv'
+
+
+#for templateflow-style output
+template_name: 'CamCAN'  #tpl-{template_name} 
+
+
+resolution_index: 1 # res-{resolution_index}
+#shape, zooms, origin will be obtained from the nifti itself
+
+
+#for creating the template_description.json file
+template_description_extras:
+  Name: 'Brief template description goes here'
+  Authors:
+    - 'Your Name Here'
+  Acknowledgements: 'Created by ants_build_template_smk Snakemake workflow'
+  BIDSVersion:
+    - '1.1.0' 
+  License: 'See LICENSE file'
+  TemplateFlowVersion: '1.0.0'
 
 
 #assumes that templateflow templates are linked in resources folder
@@ -81,21 +104,4 @@ ants_quick_dirty:
 
 
 
-#for templateflow-style output
-template_name: 'mytemplate'  #tpl-{template_name} 
-
-resolution_index: 1 # res-{resolution_index}
-#shape, zooms, origin will be obtained from the nifti itself
-
-
-#for creating the template_description.json file
-template_description_extras:
-  Name: 'Brief template description goes here'
-  Authors:
-    - 'Your Name Here'
-  Acknowledgements: 'Created by ants_build_template_smk Snakemake workflow'
-  BIDSVersion:
-    - '1.1.0' 
-  License: 'See LICENSE file'
-  TemplateFlowVersion: '1.0.0'
 

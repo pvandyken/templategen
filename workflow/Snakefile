@@ -4,18 +4,22 @@ import pandas as pd
 
 configfile: 'config/config.yml'
 
+#cohorts defined by the dict of participants_tsv files
+cohorts = config['participants_tsv'].keys()
 
+#subjects is a dict, indexed by the cohort
 #load participants.tsv file, and strip off sub- from participant_id column
-df = pd.read_table(config['participants_tsv'])
-subjects = df.participant_id.to_list() 
-subjects = [ s.strip('sub-') for s in subjects ]
+subjects = dict()
+for cohort in cohorts:
+    subjects[cohort] = [ s.strip('sub-') for s in pd.read_table(config['participants_tsv'][cohort]).participant_id.to_list() ] 
 
 #get channels using keys in in_images
 channels = list(config['in_images'].keys())
 
 #need this to make sure iterations don't go below 0!
 wildcard_constraints:
-    iteration="[0-9]+"
+    iteration="[0-9]+",
+    cohort="[a-zA-Z0-9]+"
 
 
 if config['enable_quick_dirty'] == True:
@@ -24,10 +28,10 @@ if config['enable_quick_dirty'] == True:
 
 #localrules: all, gen_init_avg_template, get_existing_template, set_init_template
 
-
+print(subjects)
 rule all:
     input:
-        avg_template =  expand('results/iter_{iteration}/template_{{channel}}.nii.gz'.format(iteration=config['max_iters']),channel=channels),
+        avg_template =  expand('results/cohort-{cohort}/iter_{iteration}/template_{channel}.nii.gz',iteration=config['max_iters'],channel=channels,cohort=cohorts),
 
 
 include: 'rules/common.smk'
