@@ -5,7 +5,7 @@ import pandas as pd
 configfile: 'config/config.yml'
 
 #cohorts defined by the dict of participants_tsv files
-cohorts = config['participants_tsv'].keys()
+cohorts = sorted(config['participants_tsv'].keys())
 
 #subjects is a dict, indexed by the cohort
 #load participants.tsv file, and strip off sub- from participant_id column
@@ -28,10 +28,10 @@ if config['enable_quick_dirty'] == True:
 
 #localrules: all, gen_init_avg_template, get_existing_template, set_init_template
 
-print(subjects)
 rule all:
     input:
-        avg_template =  expand('results/cohort-{cohort}/iter_{iteration}/template_{channel}.nii.gz',iteration=config['max_iters'],channel=channels,cohort=cohorts),
+        json = 'results/tpl-{name}/template_description.json'.format(name=config['template_name'])
+
 
 
 include: 'rules/common.smk'

@@ -1,11 +1,9 @@
 import nibabel as nib
 import numpy as np
+import json
 
 
 img = nib.load(snakemake.input[0])
-
-print('config:')
-print(snakemake.config)
 
 
 hdr = img.header
@@ -24,8 +22,12 @@ template_dict.update(snakemake.config['template_description_extras'])
 #add shape, zooms, origin, for the resolution
 template_dict.update( { 'res':  {'{res:02d}'.format(res=snakemake.config['resolution_index']) : { 'origin': origin, 'shape': shape, 'zooms': zooms } } } )
 
+#add cohorts to json, with full list of subjects for each cohort..
+cohort_dict = dict()
+for cohort in snakemake.params.cohorts:
+    cohort_dict[cohort] = { 'participants': snakemake.params.subjects[cohort] } 
 
-import json
+template_dict.update( { 'cohort': cohort_dict } )
 
 
 with open(snakemake.output[0],'w') as outfile:
