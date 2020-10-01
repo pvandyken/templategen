@@ -7,16 +7,24 @@ in_raw_T2w: '/project/6050199/akhanf/ext-bids/cam-can/bids/combined/sub-{subject
 
 #for template building - mix of fmriprep and internally processed-data
 in_images:
-  T1w: 'results/sub-{subject}/sub-{subject}_desc-brain_T1w.nii.gz'
-  T2w: 'results/sub-{subject}/sub-{subject}_space-T1w_desc-brain_T2w.nii.gz'
+  T1w: 'results/preproc/sub-{subject}/sub-{subject}_desc-brain_T1w.nii.gz'
+  T2w: 'results/preproc/sub-{subject}/sub-{subject}_space-T1w_desc-brain_T2w.nii.gz'
   GM:  '/scratch/sudesnac/CamCAN/fmriprep_20.2.0/sub-{subject}/anat/sub-{subject}_label-GM_probseg.nii.gz'
   WM:  '/scratch/sudesnac/CamCAN/fmriprep_20.2.0/sub-{subject}/anat/sub-{subject}_label-WM_probseg.nii.gz'
 
-
+cohorts:
+  - young
+#  - middle1
+#  - middle2
+#  - old1
+  - old2
 
 participants_tsv:
   young: 'config/participants_young.tsv'
-  old: 'config/participants_old.tsv'
+  middle1: 'config/participants_middle1.tsv'
+  middle2: 'config/participants_middle2.tsv'
+  old1: 'config/participants_old1.tsv'
+  old2: 'config/participants_old2.tsv'
 
 
 #for templateflow-style output
@@ -50,12 +58,12 @@ max_iters: 4
 
 
 
-resample_init_template: False #set this True to resample init template to below dims 
+resample_init_template: True #set this True to resample init template to below dims 
 # WARNING - changing this can significantly alter memory usage and run-time -- 
 resample_vox_dims: 
- - 0.7
- - 0.7
- - 0.7
+ - 2
+ - 2
+ - 2
 
 
 
@@ -82,7 +90,7 @@ ants:
       gradient_step: 0.25
 
 #set this to enable quick and dirty ants parameters
-enable_quick_dirty: True
+enable_quick_dirty: False
 
 #for testing, runs in less than a minute 
 ants_quick_dirty:

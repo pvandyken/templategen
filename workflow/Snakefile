@@ -4,13 +4,13 @@ import pandas as pd
 
 configfile: 'config/config.yml'
 
-#cohorts defined by the dict of participants_tsv files
-cohorts = sorted(config['participants_tsv'].keys())
+
+cohorts = config['cohorts']
 
 #subjects is a dict, indexed by the cohort
 #load participants.tsv file, and strip off sub- from participant_id column
 subjects = dict()
-for cohort in cohorts:
+for cohort in config['cohorts']:
     subjects[cohort] = [ s.strip('sub-') for s in pd.read_table(config['participants_tsv'][cohort]).participant_id.to_list() ] 
 
 #get channels using keys in in_images
@@ -31,6 +31,21 @@ if config['enable_quick_dirty'] == True:
 rule all:
     input:
         json = 'results/tpl-{name}/template_description.json'.format(name=config['template_name'])
+
+
+#run this target rule with: --omit-from reg_to_template
+# e.g.:  snakemake all_preproc --omit-from reg_to_template
+rule all_preproc:
+    input:
+        expand('results/cohort-{cohort}/iter_1/template_T1w.nii.gz',cohort=cohorts)
+
+
+
+#run this with --until warp_to_template 
+rule all_iter1:
+    input:
+        expand('results/cohort-{cohort}/iter_1/template_{channel}.nii.gz',cohort=cohorts,channel=channels)
+
 
 
 
