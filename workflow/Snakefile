@@ -4,8 +4,10 @@ import pandas as pd
 
 configfile: 'config/config.yml'
 
-
-cohorts = config['cohorts']
+if config['run_cohort'] == None:
+    cohorts = config['cohorts']
+else:
+    cohorts = [config['run_cohort']]
 
 #subjects is a dict, indexed by the cohort
 #load participants.tsv file, and strip off sub- from participant_id column
@@ -26,27 +28,18 @@ if config['enable_quick_dirty'] == True:
     config['ants'] = config['ants_quick_dirty']
 
 
-#localrules: all, gen_init_avg_template, get_existing_template, set_init_template
-
-rule all:
-    input:
-        json = 'results/tpl-{name}/template_description.json'.format(name=config['template_name'])
 
 
-#run this target rule with: --omit-from reg_to_template
-# e.g.:  snakemake all_preproc --omit-from reg_to_template
-rule all_preproc:
-    input:
-        expand('results/cohort-{cohort}/iter_1/template_T1w.nii.gz',cohort=cohorts)
+if config['run_iter'] != None:
+    rule all_iter:
+        input:
+             expand('results/cohort-{cohort}/iter_{iter}/template_{channel}.nii.gz',cohort=cohorts,channel=channels,iter=config['run_iter'])
+else:
+    rule all_finaltemplate:
+        input:
+            json = 'results/tpl-{name}/template_description.json'.format(name=config['template_name'])
 
-
-
-#run this with --until warp_to_template 
-rule all_iter1:
-    input:
-        expand('results/cohort-{cohort}/iter_1/template_{channel}.nii.gz',cohort=cohorts,channel=channels)
-
-
+   
 
 
 include: 'rules/common.smk'

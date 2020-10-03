@@ -8,6 +8,7 @@ rule gen_init_avg_template:
         use_n4 = '2'
     log: 'logs/gen_init_avg_template_{channel}_{cohort}.log'
     container: config['singularity']['ants']
+    group: 'init_template'
     shell:
         'AverageImages {params.dim} {output} {params.use_n4} {input} &> {log}'
 
@@ -15,6 +16,7 @@ rule get_existing_template:
     input: lambda wildcards: config['init_template'][wildcards.channel]
     output: 'results/cohort-{cohort}/iter_0/init/existing_template_{channel}.nii.gz'
     log: 'logs/get_existing_template_{channel}_{cohort}.log'
+    group: 'init_template'
     shell: 'cp -v {input} {output} &> {log}'
 
 
@@ -29,6 +31,7 @@ rule set_init_template:
                      if config['resample_init_template'] else f"cp -v {input} {output}"
     output: 'results/cohort-{cohort}/iter_0/template_{channel}.nii.gz'
     log: 'logs/set_init_template_{channel}_{cohort}.log'
+    group: 'init_template'
     container: config['singularity']['ants']
     shell: '{params.cmd} &> {log}'
 
@@ -38,67 +41,38 @@ rule reg_to_template:
                                 iteration=iteration,channel=channel,cohort=wildcards.cohort) for iteration,channel in itertools.product([int(wildcards.iteration)-1],channels)],
         target = lambda wildcards: [config['in_images'][channel] for channel in channels]
     params:
-        out_prefix = 'results/cohort-{cohort}/iter_{iteration}/sub-{subject}_',
-        base_opts = '-d {dim} --float 1 --verbose 1 --random-seed {random_seed}'.format(dim=config['ants']['dim'],random_seed=config['ants']['random_seed']),
-        intensity_opts = config['ants']['intensity_opts'],
-        init_translation = lambda wildcards, input: '-r [{template},{target},1]'.format(template=input.template[0],target=input.target[0]),
-        linear_multires = '-c [{reg_iterations},1e-6,10] -f {shrink_factors} -s {smoothing_factors}'.format(
-                                reg_iterations = config['ants']['linear']['reg_iterations'],
-                                shrink_factors = config['ants']['linear']['shrink_factors'],
-                                smoothing_factors = config['ants']['linear']['smoothing_factors']),
-        deform_model = '-t {deform_model}'.format(deform_model = config['ants']['deform']['transform_model']),
-        deform_multires = '-c [{reg_iterations},1e-9,10] -f {shrink_factors} -s {smoothing_factors}'.format(
-                                reg_iterations = config['ants']['deform']['reg_iterations'],
-                                shrink_factors = config['ants']['deform']['shrink_factors'],
-                                smoothing_factors = config['ants']['deform']['smoothing_factors']),
-        linear_metric = lambda wildcards, input: ['-m MI[{template},{target},1,32,Regular,0.25]'.format(
-                                template=template,target=target) for template,target in zip(input.template,input.target) ],
-        deform_metric = lambda wildcards, input: ['-m {metric}[{template},{target},1,4]'.format(
-                                metric=config['ants']['deform']['sim_metric'],
-                                template=template, target=target) for template,target in zip(input.template,input.target) ]
+        input_fixed_moving = lambda wildcards, input: [f'-i {fixed} {moving}' for fixed,moving in zip(input.template, input.target) ],
+        input_moving_warped = lambda wildcards, input, output: [f'-rm {moving} {warped}' for moving,warped in zip(input.target,output.warped) ],
     output:
         warp = 'results/cohort-{cohort}/iter_{iteration}/sub-{subject}_1Warp.nii.gz',
         invwarp = 'results/cohort-{cohort}/iter_{iteration}/sub-{subject}_1InverseWarp.nii.gz',
         affine = 'results/cohort-{cohort}/iter_{iteration}/sub-{subject}_0GenericAffine.mat',
+        affine_xfm_ras = 'results/cohort-{cohort}/iter_{iteration}/sub-{subject}_affine_ras.txt',
+        warped = expand('results/cohort-{cohort}/iter_{iteration}/sub-{subject}_WarpedToTemplate_{channel}.nii.gz',channel=channels,allow_missing=True)
     log: 'logs/reg_to_template/cohort-{cohort}/iter_{iteration}_sub-{subject}.log'
-    threads: 16
+    threads: 4
+    group: 'reg'
+    container: config['singularity']['itksnap']
     resources:
-        mem_mb = 16000, # right now these are on the high-end -- could implement benchmark rules to do this at some point..
-        time = 3*60 # 3 hrs
-    container: config['singularity']['ants']
+        # this is assuming 1mm
+        mem_mb = 16000,
+        time = 30
     shell: 
-        'ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS={threads} '
-        'antsRegistration {params.base_opts} {params.intensity_opts} '
-        '{params.init_translation} ' #initial translation
-        '-t Rigid[0.1] {params.linear_metric} {params.linear_multires} ' # rigid registration
-        '-t Affine[0.1] {params.linear_metric} {params.linear_multires} ' # affine registration
-        '{params.deform_model} {params.deform_metric} {params.deform_multires} '  # deformable registration
-        '-o {params.out_prefix} &> {log}'
-
-
-rule warp_to_template:
-    input: 
-        template = lambda wildcards: 'results/cohort-{cohort}/iter_{iteration}/template_{{channel}}.nii.gz'.format(iteration=int(wildcards.iteration)-1, channel=wildcards.channel,cohort=wildcards.cohort),
-        target = lambda wildcards: config['in_images'][wildcards.channel],
-        warp = 'results/cohort-{cohort}/iter_{iteration}/sub-{subject}_1Warp.nii.gz',
-        affine = 'results/cohort-{cohort}/iter_{iteration}/sub-{subject}_0GenericAffine.mat',
-    params:
-        base_opts = '-d {dim} --float 1 --verbose 1'.format(dim=config['ants']['dim']),
-    output:
-        warped = 'results/cohort-{cohort}/iter_{iteration}/sub-{subject}_WarpedToTemplate_{channel}.nii.gz'
-    log: 'logs/warp_to_template/cohort-{cohort}/iter_{iteration}_sub-{subject}_{channel}_{cohort}.log'
-    threads: 1
-    container: config['singularity']['ants']
-    shell: 
-        'ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS={threads} '
-        'antsApplyTransforms {params.base_opts} -i {input.target} -o {output.warped} -r {input.template} -t {input.warp} -t {input.affine} &> {log}'
+        #affine first
+        'greedy -d 3 -threads {threads} -a -m NCC 2x2x2 {params.input_fixed_moving} -o {output.affine_xfm_ras} -ia-image-centers -n 100x50x10 &> {log} && '
+        #then deformable:
+        'greedy -d 3 -threads {threads} -m NCC 2x2x2 {params.input_fixed_moving} -it {output.affine_xfm_ras} -o {output.warp} -oinv {output.invwarp} -n 100x50x10 &>> {log} && '
+        #then convert affine to itk format that ants uses
+        'c3d_affine_tool {output.affine_xfm_ras} -oitk {output.affine} &>> {log} && '
+        #and finally warp the moving image
+        'greedy -d 3 -threads {threads} -rf {input.template[0]} {params.input_moving_warped} -r {output.warp} {output.affine_xfm_ras} &>> {log}'
 
 rule avg_warped:
     input: 
         targets = lambda wildcards: expand('results/cohort-{cohort}/iter_{iteration}/sub-{subject}_WarpedToTemplate_{channel}.nii.gz',subject=subjects[wildcards.cohort],iteration=wildcards.iteration,channel=wildcards.channel,cohort=wildcards.cohort,allow_missing=True)
     params:
         dim = config['ants']['dim'],
-        use_n4 = '2'
+        use_n4 = '0'  # changed to no normalization
     output: 'results/cohort-{cohort}/iter_{iteration}/shape_update/avg_warped_{channel}.nii.gz'
     group: 'shape_update'
     log: 'logs/avg_warped/cohort-{cohort}/iter_{iteration}_{channel}.log'
