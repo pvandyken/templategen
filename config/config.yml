@@ -14,9 +14,9 @@ in_images:
 
 cohorts:
   - young
-#  - middle1
-#  - middle2
-#  - old1
+  - middle1
+  - middle2
+  - old1
   - old2
 
 participants_tsv:
@@ -29,6 +29,7 @@ participants_tsv:
 
 #for templateflow-style output
 template_name: 'CamCAN'  #tpl-{template_name} 
+
 
 
 resolution_index: 1 # res-{resolution_index}
@@ -54,16 +55,20 @@ init_template:
   GM: 'resources/templateflow/tpl-MNI152NLin2009cAsym/tpl-MNI152NLin2009cAsym_res-01_label-GM_probseg.nii.gz'
   WM: 'resources/templateflow/tpl-MNI152NLin2009cAsym/tpl-MNI152NLin2009cAsym_res-01_label-WM_probseg.nii.gz'
 
+#keep this empty, is set by command-line ( --config run_iter=1 or --config run_cohort=young)
+run_cohort: 
+run_iter: 
+
+#this is the iter which is exported into templateflow format
 max_iters: 4
 
 
-
-resample_init_template: True #set this True to resample init template to below dims 
+resample_init_template: False #set this True to resample init template to below dims 
 # WARNING - changing this can significantly alter memory usage and run-time -- 
 resample_vox_dims: 
- - 2
- - 2
- - 2
+ - 1
+ - 1
+ - 1
 
 
 
@@ -71,6 +76,7 @@ resample_vox_dims:
 singularity:
   prepdwi: '/project/6050199/akhanf/singularity/bids-apps/khanlab_prepdwi_latest.sif'  
   ants:  '/project/6050199/akhanf/singularity/kaczmarj_ants_2.3.4.sif'
+  itksnap:  '/project/6050199/akhanf/singularity/pyushkevich_itksnap_latest.sif'
 
 ants:
   dim: 3
