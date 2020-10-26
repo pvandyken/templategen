@@ -12,12 +12,29 @@ in_images:
   GM:  '/scratch/sudesnac/CamCAN/fmriprep_20.2.0/sub-{subject}/anat/sub-{subject}_label-GM_probseg.nii.gz'
   WM:  '/scratch/sudesnac/CamCAN/fmriprep_20.2.0/sub-{subject}/anat/sub-{subject}_label-WM_probseg.nii.gz'
 
+#for naming the final files in templateflow output
+bids_suffix:
+  T1w: 'desc-brain_T1w'
+  T2w: 'desc-brain_T2w'
+  GM: 'label-GM_probseg'
+  WM: 'label-WM_probseg'
+
+
+
 cohorts:
   - young
   - middle1
   - middle2
   - old1
   - old2
+
+cohorts_spec:
+  young: 'age <= 35'
+  middle1: '35 < age <= 47'
+  middle2: '47 < age <= 59'
+  old1: '59 < age <= 74'
+  old2: 'age > 75'
+
 
 participants_tsv:
   young: 'config/participants_young.tsv'
@@ -55,12 +72,15 @@ init_template:
   GM: 'resources/templateflow/tpl-MNI152NLin2009cAsym/tpl-MNI152NLin2009cAsym_res-01_label-GM_probseg.nii.gz'
   WM: 'resources/templateflow/tpl-MNI152NLin2009cAsym/tpl-MNI152NLin2009cAsym_res-01_label-WM_probseg.nii.gz'
 
+#will register cohort templates to the std template after they are generated
+std_template_name: 'MNI152NLin2009cAsym'
+
 #keep this empty, is set by command-line ( --config run_iter=1 or --config run_cohort=young)
 run_cohort: 
 run_iter: 
 
 #this is the iter which is exported into templateflow format
-max_iters: 4
+max_iters: 8
 
 
 resample_init_template: False #set this True to resample init template to below dims 

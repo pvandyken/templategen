@@ -28,7 +28,15 @@ if config['enable_quick_dirty'] == True:
     config['ants'] = config['ants_quick_dirty']
 
 
+rule all:
+    input:
+        json = 'results/tpl-{name}/template_description.json'.format(name=config['template_name'])
 
+
+
+#rule all:
+#    input:
+#        expand('results/cohort-{cohort}/iter_{iter}/template_{channel}.nii.gz',cohort=cohorts,channel=channels,iter=config['max_iters'])
 
 if config['run_iter'] != None:
     rule all_iter:
@@ -43,8 +51,8 @@ else:
 
 
 include: 'rules/common.smk'
-include: 'rules/reg_t2_to_t1.smk'
-include: 'rules/ants_template.smk'
+#include: 'rules/reg_t2_to_t1.smk'
+#include: 'rules/ants_template.smk'
 include: 'rules/templateflow.smk'
-
+#include: 'rules/cohort_template_to_std.smk'
 
