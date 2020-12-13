@@ -33,6 +33,6 @@ This runs each cohort separately with single-node jobs.. This is a happy medium 
 
 WARNING: make sure your cohorts are mutually-exclusive when using this method, as it is running snakemake in parallel on the same directory with the --nolock option -- if cohorts are not mutually-exclusive, you can still use this method, but only after all the pre-processing (e.g. T2/T1 registration, is completed)
 ```
-for cohort in young middle old; do  regularSubmit -j Fat snakemake --use-singularity -j32 --nolock --config run_cohort=$cohort; done
+for cohort in young middle1 middle2 old1 old2; do  regularSubmit -j Fat snakemake --use-singularity -j32 --nolock --config run_cohort=$cohort; done
 ```
 
