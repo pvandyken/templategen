@@ -34,3 +34,41 @@ rule reg_cohort_template_to_std:
 
 
 
+def get_inputs_composite_subj_to_std (wildcards):
+    """ Function for setting all the inputs
+        Needed since cohort isn't in the output filename, and is determined
+        by looking at the input lists
+    """
+    for c in cohorts:
+        if wildcards.subject in subjects[c]:
+            cohort = c
+    std_template = wildcards.std_template
+    subject = wildcards.subject
+    iteration=config['max_iters']
+
+    return {
+        'cohort2std_warp': f'results/cohort-{cohort}/reg_to_{std_template}/cohort-{cohort}_to-{std_template}_1Warp.nii.gz',
+        'cohort2std_affine_xfm_ras': f'results/cohort-{cohort}/reg_to_{std_template}/cohort-{cohort}_to-{std_template}_affine_ras.txt',
+        'subj2cohort_warp': f'results/cohort-{cohort}/iter_{iteration}/sub-{subject}_1Warp.nii.gz',
+        'subj2cohort_affine_xfm_ras': f'results/cohort-{cohort}/iter_{iteration}/sub-{subject}_affine_ras.txt',
+        'ref_std': config['init_template'][channels[0]] }
+      
+
+rule create_composite_subj_to_std:
+    """ This concatenates the subject to cohort to mni warps/affines to get a single warp from subject to mni """
+    input: unpack(get_inputs_composite_subj_to_std)
+    output:
+        subj2std_warp = 'results/composite/sub-{subject}_to-{std_template}_via-cohort_CompositeWarp.nii.gz'
+    shell: 'greedy -d 3 -rf {input.ref_std} '
+          ' -r {input.cohort2std_warp} {input.cohort2std_affine_xfm_ras} '
+          '  {input.subj2cohort_warp} {input.subj2cohort_affine_xfm_ras} '
+          ' -rc {output.subj2std_warp}'
+
+
+
+
+#rule create_composite_std_to_subj:
+#    """ This concatenates the subject to cohort to mni warps/affines to get a single warp from mni to subject"""
+ # to do if needed: would use the inverse xfms.. 
+
+
