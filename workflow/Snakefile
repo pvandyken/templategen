@@ -28,8 +28,10 @@ wildcard_constraints:
 
 
 rule all_composite_warps:
-    input: expand('results/composite/sub-{subject}_to-{template}_via-cohort_CompositeWarp.nii.gz',\
-                    template=config['template_name'], subject=all_subjects)
+    input: expand('results/composite/sub-{subject}_to-{template}_via-cohort_{warptype}.nii.gz',\
+                    template=config['std_template_name'],\
+                    warptype=['CompositeWarp','CompositeInverseWarp'],\
+                    subject=all_subjects)
 
 
 if config['run_iter'] != None:
