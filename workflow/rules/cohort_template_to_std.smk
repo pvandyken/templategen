@@ -17,12 +17,13 @@ rule reg_cohort_template_to_std:
         warped = expand('results/cohort-{cohort}/reg_to_{std_template}/cohort-{cohort}_to-{std_template}_WarpedToTemplate_{channel}.nii.gz',channel=channels,allow_missing=True)
         
     log: 'logs/reg_cohort_template_to_std/cohort-{cohort}_{std_template}.log'
-    threads: 4
+    threads: 8
     container: config['singularity']['itksnap']
     resources:
         # this is assuming 1mm
-        mem_mb = 16000,
-        time = 30
+        mem_mb = 32000,
+        time = 60
+    group: 'reg_to_std'
     shell: 
         #affine first
         'greedy -d 3 -threads {threads} -a -m NCC 2x2x2 {params.input_fixed_moving} -o {output.affine_xfm_ras} -ia-image-centers -n 100x50x10 &> {log} && '
@@ -59,6 +60,7 @@ rule create_composite_subj_to_std:
     input: unpack(get_inputs_composite_subj_to_std)
     output:
         subj2std_warp = 'results/composite/sub-{subject}_to-{std_template}_via-cohort_CompositeWarp.nii.gz'
+    group: 'composite'
     shell: 'greedy -d 3 -rf {input.ref_std} '
           ' -r {input.cohort2std_warp} {input.cohort2std_affine_xfm_ras} '
           '  {input.subj2cohort_warp} {input.subj2cohort_affine_xfm_ras} '
@@ -93,6 +95,7 @@ rule create_composite_subj_to_std_inverse:
     input: unpack(get_inputs_composite_subj_to_std_inverse)
     output:
         subj2std_invwarp = 'results/composite/sub-{subject}_to-{std_template}_via-cohort_CompositeInverseWarp.nii.gz'
+    group: 'composite'
     shell: 'greedy -d 3 -rf {input.ref_subj} -r '
           ' {input.subj2cohort_affine_xfm_ras},-1 '
           ' {input.subj2cohort_invwarp}'
