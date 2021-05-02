@@ -12,6 +12,16 @@ in_images:
   GM:  '/scratch/sudesnac/CamCAN/fmriprep_20.2.0/sub-{subject}/anat/sub-{subject}_label-GM_probseg.nii.gz'
   WM:  '/scratch/sudesnac/CamCAN/fmriprep_20.2.0/sub-{subject}/anat/sub-{subject}_label-WM_probseg.nii.gz'
 
+
+#for naming the final files in templateflow output
+bids_suffix:
+  T1w: 'desc-brain_T1w'
+  T2w: 'desc-brain_T2w'
+  GM: 'label-GM_probseg'
+  WM: 'label-WM_probseg'
+
+
+
 cohorts:
   - young
   - middle1
@@ -50,17 +60,20 @@ template_description_extras:
 
 #assumes that templateflow templates are linked in resources folder
 init_template:
-  T1w: 'resources/templateflow/tpl-MNI152NLin2009cAsym/tpl-MNI152NLin2009cAsym_res-01_desc-brain_T1w.nii.gz'
-  T2w: 'resources/templateflow/tpl-MNI152NLin2009cAsym/tpl-MNI152NLin2009cAsym_res-01_desc-brain_T2w.nii.gz'
-  GM: 'resources/templateflow/tpl-MNI152NLin2009cAsym/tpl-MNI152NLin2009cAsym_res-01_label-GM_probseg.nii.gz'
-  WM: 'resources/templateflow/tpl-MNI152NLin2009cAsym/tpl-MNI152NLin2009cAsym_res-01_label-WM_probseg.nii.gz'
+  T1w: 'resources/templateflow/tpl-MNI152NLin6Asym/tpl-MNI152NLin6Asym_res-04_desc-brain_T1w.nii.gz'
+  T2w: 'resources/templateflow/tpl-MNI152NLin6Asym/tpl-MNI152NLin6Asym_res-04_desc-brain_T2w.nii.gz'
+  GM: 'resources/templateflow/tpl-MNI152NLin6Asym/FSL_FAST/tpl-MNI152NLin6Asym_res-04_desc-brain_T1w_prob_1.nii.gz'
+  WM: 'resources/templateflow/tpl-MNI152NLin6Asym/FSL_FAST/tpl-MNI152NLin6Asym_res-04_desc-brain_T1w_prob_2.nii.gz'
+
+#will register cohort templates to the std template after they are generated
+std_template_name: 'MNI152NLin6Asym'
 
 #keep this empty, is set by command-line ( --config run_iter=1 or --config run_cohort=young)
 run_cohort: 
 run_iter: 
 
 #this is the iter which is exported into templateflow format
-max_iters: 4
+max_iters: 8
 
 
 resample_init_template: False #set this True to resample init template to below dims 
@@ -80,42 +93,8 @@ singularity:
 
 ants:
   dim: 3
-  random_seed: 42
-  intensity_opts: '-u 1 -w [0.01,0.99] -z 1'
-  linear:
-      reg_iterations: '1000x500x250x0'
-      shrink_factors: '6x4x2x1'
-      smoothing_factors: '4x2x1x0'
-  deform:
-      shrink_factors: '12x6x4x2x1'  # default in antsMVTC2: 6x4x2x1
-      smoothing_factors: '6x3x2x1x0vox' # default in antsMVTC2: 3x2x1x0
-      reg_iterations: '100x100x70x50x10' # default in antsMVTC2: 100x100x70x20
-      transform_model: 'SyN[0.1,3,0]'
-      sim_metric: CC
   shape_update:
       gradient_step: 0.25
-
-#set this to enable quick and dirty ants parameters
-enable_quick_dirty: False
-
-#for testing, runs in less than a minute 
-ants_quick_dirty:
-  dim: 3
-  random_seed: 42
-  intensity_opts: '-u 1 -w [0.01,0.99] -z 1'
-  linear:
-    reg_iterations: '1000'
-    shrink_factors: '6'
-    smoothing_factors: '4'
-  deform:
-    shrink_factors: '12'  # default in antsMVTC2: 6x4x2x1 
-    smoothing_factors: '6vox' # default in antsMVTC2: 3x2x1x0 
-    reg_iterations: '50' # default in antsMVTC2: 100x100x70x20 
-    transform_model: 'SyN[0.1,3,0]'
-    sim_metric: CC
-  shape_update:
-    gradient_step: 0.25
-
 
 
 

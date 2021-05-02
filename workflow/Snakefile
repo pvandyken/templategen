@@ -12,8 +12,10 @@ else:
 #subjects is a dict, indexed by the cohort
 #load participants.tsv file, and strip off sub- from participant_id column
 subjects = dict()
+all_subjects = list()
 for cohort in config['cohorts']:
     subjects[cohort] = [ s.strip('sub-') for s in pd.read_table(config['participants_tsv'][cohort]).participant_id.to_list() ] 
+    all_subjects = all_subjects + subjects[cohort]
 
 #get channels using keys in in_images
 channels = list(config['in_images'].keys())
@@ -24,10 +26,12 @@ wildcard_constraints:
     cohort="[a-zA-Z0-9]+"
 
 
-if config['enable_quick_dirty'] == True:
-    config['ants'] = config['ants_quick_dirty']
 
-
+rule all_composite_warps:
+    input: expand('results/composite/sub-{subject}_to-{template}_via-cohort_{warptype}.nii.gz',\
+                    template=config['std_template_name'],\
+                    warptype=['CompositeWarp','CompositeInverseWarp'],\
+                    subject=all_subjects)
 
 
 if config['run_iter'] != None:
@@ -39,12 +43,11 @@ else:
         input:
             json = 'results/tpl-{name}/template_description.json'.format(name=config['template_name'])
 
-   
 
 
 include: 'rules/common.smk'
 include: 'rules/reg_t2_to_t1.smk'
 include: 'rules/ants_template.smk'
 include: 'rules/templateflow.smk'
-
+include: 'rules/cohort_template_to_std.smk'
 
