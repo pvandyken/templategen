@@ -5,12 +5,82 @@ in_brainmask_T1w: '/scratch/sudesnac/CamCAN/fmriprep_20.2.0/sub-{subject}/anat/s
 #this can come from raw bids:
 in_raw_T2w: '/project/6050199/akhanf/ext-bids/cam-can/bids/combined/sub-{subject}/anat/sub-{subject}_T2w.nii.gz'
 
-#for template building - mix of fmriprep and internally processed-data
-in_images:
-  T1w: 'results/preproc/sub-{subject}/sub-{subject}_desc-brain_T1w.nii.gz'
-  T2w: 'results/preproc/sub-{subject}/sub-{subject}_space-T1w_desc-brain_T2w.nii.gz'
-  GM:  '/scratch/sudesnac/CamCAN/fmriprep_20.2.0/sub-{subject}/anat/sub-{subject}_label-GM_probseg.nii.gz'
-  WM:  '/scratch/sudesnac/CamCAN/fmriprep_20.2.0/sub-{subject}/anat/sub-{subject}_label-WM_probseg.nii.gz'
+
+#assumes that templateflow templates are linked in resources folder
+init_template:
+  T1w: 'resources/templateflow/tpl-MNI152NLin6Asym/tpl-MNI152NLin6Asym_res-04_desc-brain_T1w.nii.gz'
+  T2w: 'resources/templateflow/tpl-MNI152NLin6Asym/tpl-MNI152NLin6Asym_res-04_desc-brain_T2w.nii.gz'
+  GM: 'resources/templateflow/tpl-MNI152NLin6Asym/FSL_FAST/tpl-MNI152NLin6Asym_res-04_desc-brain_T1w_prob_1.nii.gz'
+  WM: 'resources/templateflow/tpl-MNI152NLin6Asym/FSL_FAST/tpl-MNI152NLin6Asym_res-04_desc-brain_T1w_prob_2.nii.gz'
+
+pybids_inputs:
+  T1w:
+    filters:
+      desc: brain
+      suffix: T1w
+    wildcards:
+      - subject
+  T2w:
+    filters:
+      desc: brain
+      suffix: T2w
+    wildcards:
+      - subject
+  GM:
+    filters:
+      label: GM
+      suffix: probseg
+    wildcards:
+      - subject
+  WM:
+    filters:
+      label: WM
+      suffix: probseg
+    wildcards:
+      - subject
+
+targets_by_analysis_level:
+  group:
+  - ''
+analysis_levels: &analysis_levels
+- group
+
+parse_args:
+  bids_dir:
+    help: |
+      The directory with the input dataset formatted according to the BIDS
+      standard.
+  output_dir:
+    help: |
+      The directory where the output files should be stored. If you are running
+      group level analysis this folder should be prepopulated with the results
+      of the participant level analysis.
+  analysis_level:
+    help: Level of the analysis that will be performed.
+    choices: *analysis_levels
+  --participant_label:
+    help: |
+      The label(s) of the participant(s) that should be analyzed. The label
+      corresponds to sub-<participant_label> from the BIDS spec (so it does not
+      include "sub-"). If this parameter is not provided all subjects should be
+      analyzed. Multiple participants can be specified with a space separated
+      list.
+    nargs: +
+  --exclude_participant_label:
+    help: |
+      The label(s) of the participant(s) that should be excluded. The label
+      corresponds to sub-<participant_label> from the BIDS spec (so it does not
+      include "sub-"). If this parameter is not provided all subjects should be
+      analyzed. Multiple participants can be specified with a space separated
+      list.
+    nargs: +
+  --derivatives:
+    help: Index derivative datasets found with <bids_dir>/derivatives
+    action: store_true
+    default: false
+  --template_name:
+    help: Name for final template (will appear in output as tpl-<template_name>)
+    default: study
 
 
 #for naming the final files in templateflow output
@@ -20,25 +90,6 @@ bids_suffix:
   GM: 'label-GM_probseg'
   WM: 'label-WM_probseg'
 
-
-
-cohorts:
-  - young
-  - middle1
-  - middle2
-  - old1
-  - old2
-
-participants_tsv:
-  young: 'config/participants_young.tsv'
-  middle1: 'config/participants_middle1.tsv'
-  middle2: 'config/participants_middle2.tsv'
-  old1: 'config/participants_old1.tsv'
-  old2: 'config/participants_old2.tsv'
-
-
-#for templateflow-style output
-template_name: 'CamCAN'  #tpl-{template_name} 
 
 
 
@@ -58,12 +109,6 @@ template_description_extras:
   TemplateFlowVersion: '1.0.0'
 
 
-#assumes that templateflow templates are linked in resources folder
-init_template:
-  T1w: 'resources/templateflow/tpl-MNI152NLin6Asym/tpl-MNI152NLin6Asym_res-04_desc-brain_T1w.nii.gz'
-  T2w: 'resources/templateflow/tpl-MNI152NLin6Asym/tpl-MNI152NLin6Asym_res-04_desc-brain_T2w.nii.gz'
-  GM: 'resources/templateflow/tpl-MNI152NLin6Asym/FSL_FAST/tpl-MNI152NLin6Asym_res-04_desc-brain_T1w_prob_1.nii.gz'
-  WM: 'resources/templateflow/tpl-MNI152NLin6Asym/FSL_FAST/tpl-MNI152NLin6Asym_res-04_desc-brain_T1w_prob_2.nii.gz'
 
 #will register cohort templates to the std template after they are generated
 std_template_name: 'MNI152NLin6Asym'
