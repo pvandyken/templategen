@@ -1,39 +1,5 @@
 
 
-rule gen_init_avg_template:
-    input: lambda wildcards: expand(config['in_images'][wildcards.channel],subject=subjects[wildcards.cohort])
-    output: 'results/cohort-{cohort}/iter_0/init/init_avg_template_{channel}.nii.gz'
-    params:
-        dim = config['ants']['dim'],
-        use_n4 = '2'
-    log: 'logs/gen_init_avg_template_{channel}_{cohort}.log'
-    container: config['singularity']['ants']
-    group: 'init_template'
-    shell:
-        'AverageImages {params.dim} {output} {params.use_n4} {input} &> {log}'
-
-rule get_existing_template:
-    input: lambda wildcards: config['init_template'][wildcards.channel]
-    output: 'results/cohort-{cohort}/iter_0/init/existing_template_{channel}.nii.gz'
-    log: 'logs/get_existing_template_{channel}_{cohort}.log'
-    group: 'init_template'
-    shell: 'cp -v {input} {output} &> {log}'
-
-
-rule set_init_template:
-    input:
-        'results/cohort-{cohort}/iter_0/init/init_avg_template_{channel}.nii.gz' if config['init_template'] == None else 'results/cohort-{cohort}/iter_0/init/existing_template_{channel}.nii.gz'
-    params: 
-        cmd = lambda wildcards, input, output:
-                'ResampleImageBySpacing {dim} {input} {output} {vox_dims}'.format(
-                        dim = config['ants']['dim'], input = input, output = output,
-                        vox_dims=' '.join([str(d) for d in config['resample_vox_dims']]))
-                     if config['resample_init_template'] else f"cp -v {input} {output}"
-    output: 'results/cohort-{cohort}/iter_0/template_{channel}.nii.gz'
-    log: 'logs/set_init_template_{channel}_{cohort}.log'
-    group: 'init_template'
-    container: config['singularity']['ants']
-    shell: '{params.cmd} &> {log}'
 
 rule reg_to_template:
     input: 
