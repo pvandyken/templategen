@@ -1,15 +1,14 @@
 from os.path import join
 from pathlib import Path
 from snakebids import generate_inputs, bids
-from bids import parse_file_entities
 import itertools
 import pandas as pd
 import shutil as sh
+import tempfile
 
 def get_labels(label):
     cli = config.get(label, None)
-    vals = cli if isinstance(cli, int) else cli.split(",") if cli is not None else None
-    return vals
+    return cli.split(",") if isinstance(cli, str) else cli
 
 def get_participants(participant_file):
     subs = pd.read_csv(participant_file, sep='\t')
@@ -33,20 +32,26 @@ if participant_label is None and exclude_participant_label is None:
 inputs = generate_inputs(
     bids_dir=config['bids_dir'],
     pybids_inputs=config['pybids_inputs'],
-    derivatives=True,
+    derivatives=config["derivatives"],
     participant_label=participant_label,
     exclude_participant_label=exclude_participant_label,
     use_bids_inputs=True,
-    pybids_database_dir=config.get("pybids_database_dir"),
-    pybids_reset_database=config.get("pybids_reset_database"),
+    pybids_database_dir=config.get("pybids_db_dir"),
+    pybids_reset_database=config.get("pybids_db_reset"),
 )
+
+def _get_default_tmpdir():
+    _dir = workflow.default_resources.parsed.get("tmpdir")
+    if callable(_dir):
+        return _dir({}, '', 0, 0, '')
+    return _dir
 
 work = Path(
     config.get(
         'workdir',
         tempfile.mkdtemp(
             prefix="greedy-template.",
-            dir=workflow.default_resources.get("tmpdir")
+            dir=_get_default_tmpdir(),
         )
     )
 )
@@ -64,9 +69,10 @@ output_warps = [
     bids(
         output_dir,
         **{
-            "space": "{template}"
             **get_entity_filters(config['pybids_inputs'][channel]["filters"]),
             **inputs[channel].wildcards,
+            "space": "{template}",
+            "suffix": config['pybids_inputs'][channel]['filters']['suffix'] + ''.join(Path(inputs[channel].path).suffixes)
         }
     )
     for channel in channels

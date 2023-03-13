@@ -2,7 +2,7 @@ rule reg_to_template:
     input: 
         template = lambda wildcards: expand(
             work/'iter_{iteration}/template_{channel}.nii.gz',
-            iteration=wildcards.iteration - 1,
+            iteration=int(wildcards.iteration) - 1,
             channel=channels,
         ),
         target = lambda wildcards: [
@@ -19,6 +19,7 @@ rule reg_to_template:
             allow_missing=True
         )
     log: 'logs/reg_to_template/iter_{iteration}_sub-{subject}.log'
+    benchmark:  'benchmark/reg_to_template/iter_{iteration}_sub-{subject}.tsv'
     threads: 4
     group: 'reg'
     container: config['singularity']['itksnap']
@@ -143,7 +144,7 @@ rule apply_template_update:
         dim = '-d {dim}'.format(dim = config['ants']['dim'])
     output:
         template = work/'iter_{iteration}/template_{channel}.nii.gz'
-    log: 'logs/apply_template_update/iter_{iteration}_{channel}_{cohort}.log'
+    log: 'logs/apply_template_update/iter_{iteration}_{channel}.log'
     group: 'shape_update'
     container: config['singularity']['ants']
     shell:
@@ -159,11 +160,13 @@ rule get_final_xfm:
         ),
         affine=expand(
             rules.reg_to_template.output['affine_xfm_ras'],
-            iteration=config['num_iters']
+            iteration=config['num_iters'],
+            allow_missing=True,
         ),
         warp=expand(
-            rules.reg_to_template.output['warp']
-            iteration=config['num_iters']
+            rules.reg_to_template.output['warp'],
+            iteration=config['num_iters'],
+            allow_missing=True,
         ),
     output:
         bids(
@@ -172,7 +175,7 @@ rule get_final_xfm:
             mode="image",
             from_="individual",
             to="{template}",
-            suffix="xfm.nii.gz"
+            suffix="xfm.nii.gz",
             **inputs.subj_wildcards,
         )
 
@@ -191,11 +194,13 @@ rule get_final_inv_xfm:
         ),
         affine=expand(
             rules.reg_to_template.output['affine_xfm_ras'],
-            iteration=config['num_iters']
+            iteration=config['num_iters'],
+            allow_missing=True,
         ),
         warp=expand(
-            rules.reg_to_template.output['invwarp']
-            iteration=config['num_iters']
+            rules.reg_to_template.output['invwarp'],
+            iteration=config['num_iters'],
+            allow_missing=True,
         ),
     output:
         bids(
@@ -204,7 +209,7 @@ rule get_final_inv_xfm:
             mode="image",
             from_="{template}",
             to="individual",
-            suffix="xfm.nii.gz"
+            suffix="xfm.nii.gz",
             **inputs.subj_wildcards,
         )
 

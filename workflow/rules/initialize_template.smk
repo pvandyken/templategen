@@ -1,11 +1,11 @@
 
 rule gen_init_avg_template:
-    input: lambda wildcards: expand(
-        inputs[wildcards.channel].path,
-        **inputs.subjects
-    )
+    input: 
+        lambda wcards: expand(
+            inputs[wcards['channel']].path,
+            subject=inputs.subjects,
+        )
     output: work/'iter_0/init/init_avg_template_{channel}.nii.gz'
-    output: work/'iter_0/template_{channel}.nii.gz'
     params:
         dim = config['ants']['dim'],
         use_n4 = '2',
@@ -20,9 +20,8 @@ rule gen_init_avg_template:
 
 rule get_existing_template:
     input: lambda wildcards: config['init_template'][wildcards.channel]
-    output: 'results/cohort-{cohort}/iter_0/init/existing_template_{channel}.nii.gz'
     output: work/'iter_0/init/existing_template_{channel}.nii.gz'
-    log: 'logs/get_existing_template_{channel}_{cohort}.log'
+    log: 'logs/get_existing_template_{channel}.log'
     group: 'init_template'
     shell: 'cp -v {input} {output} &> {log}'
 

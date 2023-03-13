@@ -7,11 +7,11 @@ wildcard_constraints:
 
 
 include: 'rules/setup.smk'
-include: 'rules/reg_t2_to_t1.smk'
+# include: 'rules/reg_t2_to_t1.smk'
 include: 'rules/initialize_template.smk'
 include: 'rules/ants_template.smk'
-include: 'rules/templateflow.smk'
-include: 'rules/cohort_template_to_std.smk'
+# include: 'rules/templateflow.smk'
+# include: 'rules/cohort_template_to_std.smk'
 
 
 
@@ -19,11 +19,12 @@ rule all_composite_warps:
     input:
         expand(
             [
-                rules.get_final_xfm.output,
-                rules.get_final_inv_xfm.output,
-                rules.get_final_warped.output,
+                rules.get_final_xfm.output[0],
+                rules.get_final_inv_xfm.output[0],
+                rules.get_final_warped.output[0],
             ],
-            subjects=inputs.subjects
+            subject=inputs.subjects,
+            template=config['template_name']
         ),
     
     

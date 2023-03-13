@@ -14,13 +14,13 @@ pybids_inputs:
 
 
 targets_by_analysis_level:
-  individual:
+  participant:
   - all_composite_warps
   group:
   - ''
 analysis_levels: &analysis_levels
 - group
-- individual
+- participant
 
 parse_args:
   bids_dir:
