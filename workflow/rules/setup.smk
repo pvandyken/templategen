@@ -1,4 +1,6 @@
 from os.path import join
+from pathlib import Path
+from snakebids import generate_inputs, bids
 import itertools
 import pandas as pd
 
@@ -37,7 +39,17 @@ inputs = generate_inputs(
     pybids_reset_database=config.get("pybids_reset_database"),
 )
 
+work = Path(
+    config.get(
+        'workdir',
+        tempfile.mkdtemp(
+            prefix="greedy-template.",
+            dir=workflow.default_resources.get("tmpdir")
+        )
+    )
+)
+output_dir = Path(config['output_dir'])
 
 
 #get channels using keys in in_images
-channels = list(config['in_images'].keys())
+channels = list(inputs.keys())

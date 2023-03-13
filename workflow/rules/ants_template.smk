@@ -41,8 +41,14 @@ rule reg_to_template:
                                 iteration=iteration,channel=channel,cohort=wildcards.cohort) for iteration,channel in itertools.product([int(wildcards.iteration)-1],channels)],
         target = lambda wildcards: [config['in_images'][channel] for channel in channels]
     params:
-        input_fixed_moving = lambda wildcards, input: [f'-i {fixed} {moving}' for fixed,moving in zip(input.template, input.target) ],
-        input_moving_warped = lambda wildcards, input, output: [f'-rm {moving} {warped}' for moving,warped in zip(input.target,output.warped) ],
+        input_fixed_moving = lambda wildcards, input: [
+            f'-i {fixed} {moving}'
+            for fixed,moving in zip(input.template, input.target)
+        ],
+        input_moving_warped = lambda wildcards, input, output: [
+            f'-rm {moving} {warped}'
+            for moving,warped in zip(input.target,output.warped)
+        ],
     output:
         warp = 'results/cohort-{cohort}/iter_{iteration}/sub-{subject}_1Warp.nii.gz',
         invwarp = 'results/cohort-{cohort}/iter_{iteration}/sub-{subject}_1InverseWarp.nii.gz',
@@ -59,13 +65,19 @@ rule reg_to_template:
         time = 30
     shell: 
         #affine first
-        'greedy -d 3 -threads {threads} -a -m NCC 2x2x2 {params.input_fixed_moving} -o {output.affine_xfm_ras} -ia-image-centers -n 100x50x10 &> {log} && '
+        'greedy -d 3 -threads {threads} -a -m NCC 2x2x2 '
+        '{params.input_fixed_moving} -o {output.affine_xfm_ras} '
+        '-ia-image-centers -n 100x50x10 &> {log} && '
         #then deformable:
-        'greedy -d 3 -threads {threads} -m NCC 2x2x2 {params.input_fixed_moving} -it {output.affine_xfm_ras} -o {output.warp} -oinv {output.invwarp} -n 100x50x10 &>> {log} && '
+        'greedy -d 3 -threads {threads} -m NCC 2x2x2 '
+        '{params.input_fixed_moving} -it {output.affine_xfm_ras} '
+        '-o {output.warp} -oinv {output.invwarp} -n 100x50x10 &>> {log} && '
         #then convert affine to itk format that ants uses
         'c3d_affine_tool {output.affine_xfm_ras} -oitk {output.affine} &>> {log} && '
         #and finally warp the moving image
-        'greedy -d 3 -threads {threads} -rf {input.template[0]} {params.input_moving_warped} -r {output.warp} {output.affine_xfm_ras} &>> {log}'
+        'greedy -d 3 -threads {threads} -rf {input.template[0]} '
+        '{params.input_moving_warped} -r {output.warp} {output.affine_xfm_ras} '
+        '&>> {log}'
 
 rule avg_warped:
     input: 
@@ -150,4 +162,63 @@ rule apply_template_update:
         'antsApplyTransforms {params.dim} --float 1 --verbose 1 -i {input.template} -o {output.template} -t [{input.affine},1] '
         ' -t {input.invwarp} -t {input.invwarp} -t {input.invwarp} -t {input.invwarp} -r {input.template} &> {log}' #apply warp 4 times
 
+rule get_final_xfm:
+    input:
+        template=expand(
+            rules.apply_template_update.output['template'],
+            iteration=config['max_iters']
+        ),
+        affine=expand(
+            rules.reg_to_template.output['affine_xfm_ras'],
+            iteration=config['max_iters']
+        ),
+        warp=expand(
+            rules.reg_to_template.output['warp']
+            iteration=config['max_iters']
+        ),
+    output:
+        bids(
+            output_dir/"template",
+            datatype="xfm",
+            mode="image",
+            from_="individual",
+            to="{template}",
+            suffix="xfm.nii.gz"
+            **inputs.subj_wildcards,
+        )
 
+    container: config['singularity']['itksnap']
+    shell: 'greedy -d 3 -rf {input.template} '
+          ' -r {input.warp} {input.affine} '
+          ' -rc {output}'
+
+
+rule get_final_inv_xfm:
+    input:
+        template=expand(
+            rules.apply_template_update.output['template'],
+            iteration=config['max_iters']
+        ),
+        affine=expand(
+            rules.reg_to_template.output['affine_xfm_ras'],
+            iteration=config['max_iters']
+        ),
+        warp=expand(
+            rules.reg_to_template.output['invwarp']
+            iteration=config['max_iters']
+        ),
+    output:
+        bids(
+            output_dir/"template",
+            datatype="xfm",
+            mode="image",
+            from_="{template}",
+            to="individual",
+            suffix="xfm.nii.gz"
+            **inputs.subj_wildcards,
+        )
+
+    container: config['singularity']['itksnap']
+    shell: 'greedy -d 3 -rf {input.template} '
+          ' -r {input.affine},-1 {input.warp}'
+          ' -rc {output}'
