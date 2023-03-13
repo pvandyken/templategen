@@ -1,8 +1,10 @@
 from os.path import join
 from pathlib import Path
 from snakebids import generate_inputs, bids
+from bids import parse_file_entities
 import itertools
 import pandas as pd
+import shutil as sh
 
 def get_labels(label):
     cli = config.get(label, None)
@@ -50,6 +52,18 @@ work = Path(
 )
 output_dir = Path(config['output_dir'])
 
+channels = list(inputs.keys())
+
+output_warps = [
+    bids(
+        output_dir,
+        **{
+            "space": "{template}"
+            **config['pybids_inputs'][channel]["filters"],
+            **inputs[channel].wildcards,
+        }
+    )
+    for channel in channels
+]
 
 #get channels using keys in in_images
-channels = list(inputs.keys())
