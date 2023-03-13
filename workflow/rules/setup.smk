@@ -54,12 +54,18 @@ output_dir = Path(config['output_dir'])
 
 channels = list(inputs.keys())
 
+def get_entity_filters(filters):
+    return {
+        key: val for key, val in filters.items()
+        if key != "scope" and "_" not in key
+    }
+
 output_warps = [
     bids(
         output_dir,
         **{
             "space": "{template}"
-            **config['pybids_inputs'][channel]["filters"],
+            **get_entity_filters(config['pybids_inputs'][channel]["filters"]),
             **inputs[channel].wildcards,
         }
     )

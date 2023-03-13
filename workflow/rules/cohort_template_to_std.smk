@@ -6,7 +6,7 @@
 rule reg_cohort_template_to_std:
     input:
         std_template = [ config['init_template'][channel]  for channel in channels ],
-        cohort_template =  expand('results/cohort-{{cohort}}/iter_{iteration}/template_{channel}.nii.gz',iteration=config['max_iters'],channel=channels)
+        cohort_template =  expand('results/cohort-{{cohort}}/iter_{iteration}/template_{channel}.nii.gz',iteration=config['num_iters'],channel=channels)
     params:
         input_fixed_moving = lambda wildcards, input: [f'-i {fixed} {moving}' for fixed,moving in zip(input.std_template, input.cohort_template) ],
         input_moving_warped = lambda wildcards, input, output: [f'-rm {moving} {warped}' for moving,warped in zip(input.cohort_template,output.warped) ],
@@ -45,7 +45,7 @@ def get_inputs_composite_subj_to_std (wildcards):
             cohort = c
     std_template = wildcards.std_template
     subject = wildcards.subject
-    iteration=config['max_iters']
+    iteration=config['num_iters']
 
     return {
         'cohort2std_warp': f'results/cohort-{cohort}/reg_to_{std_template}/cohort-{cohort}_to-{std_template}_1Warp.nii.gz',
@@ -78,7 +78,7 @@ def get_inputs_composite_subj_to_std_inverse (wildcards):
             cohort = c
     std_template = wildcards.std_template
     subject = wildcards.subject
-    iteration=config['max_iters']
+    iteration=config['num_iters']
 
     return {
         'cohort2std_invwarp': f'results/cohort-{cohort}/reg_to_{std_template}/cohort-{cohort}_to-{std_template}_1InverseWarp.nii.gz',

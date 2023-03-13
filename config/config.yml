@@ -1,49 +1,26 @@
-#these can come from fmriprep:
-in_preproc_T1w: '/scratch/sudesnac/CamCAN/fmriprep_20.2.0/sub-{subject}/anat/sub-{subject}_desc-preproc_T1w.nii.gz'
-in_brainmask_T1w: '/scratch/sudesnac/CamCAN/fmriprep_20.2.0/sub-{subject}/anat/sub-{subject}_desc-brain_mask.nii.gz'
-
-#this can come from raw bids:
-in_raw_T2w: '/project/6050199/akhanf/ext-bids/cam-can/bids/combined/sub-{subject}/anat/sub-{subject}_T2w.nii.gz'
-
-
 #assumes that templateflow templates are linked in resources folder
 init_template:
-  T1w: 'resources/templateflow/tpl-MNI152NLin6Asym/tpl-MNI152NLin6Asym_res-04_desc-brain_T1w.nii.gz'
-  T2w: 'resources/templateflow/tpl-MNI152NLin6Asym/tpl-MNI152NLin6Asym_res-04_desc-brain_T2w.nii.gz'
-  GM: 'resources/templateflow/tpl-MNI152NLin6Asym/FSL_FAST/tpl-MNI152NLin6Asym_res-04_desc-brain_T1w_prob_1.nii.gz'
-  WM: 'resources/templateflow/tpl-MNI152NLin6Asym/FSL_FAST/tpl-MNI152NLin6Asym_res-04_desc-brain_T1w_prob_2.nii.gz'
+  FA: /cvmfs/soft.computecanada.ca/easybuild/software/2020/avx2/Compiler/gcc9/fsl/6.0.4/fsl/data/standard/FMRIB58_FA_1mm.nii.gz
 
 pybids_inputs:
-  T1w:
+  FA:
     filters:
-      desc: brain
-      suffix: T1w
+      suffix: mdp
+      desc: FA
+      space: T1w
+      scope: prepdwi_recon
     wildcards:
-      - subject
-  T2w:
-    filters:
-      desc: brain
-      suffix: T2w
-    wildcards:
-      - subject
-  GM:
-    filters:
-      label: GM
-      suffix: probseg
-    wildcards:
-      - subject
-  WM:
-    filters:
-      label: WM
-      suffix: probseg
-    wildcards:
-      - subject
+    - subject
+
 
 targets_by_analysis_level:
+  individual:
+  - all_composite_warps
   group:
   - ''
 analysis_levels: &analysis_levels
 - group
+- individual
 
 parse_args:
   bids_dir:
@@ -81,14 +58,17 @@ parse_args:
   --template_name:
     help: Name for final template (will appear in output as tpl-<template_name>)
     default: study
+  --num_iters:
+    help: Number of registration iterations to run
+    default: "8"
+  --workdir:
+    help: |
+      Directory to store temporary outputs. Defaults to the snakemake 
+      default-resources tmpdir, or if that's unset, a platform-specific tmpdir.
+      (Note, this option must be explicitly set to resume an interrupted
+      workflow.)
+    default: ''
 
-
-#for naming the final files in templateflow output
-bids_suffix:
-  T1w: 'desc-brain_T1w'
-  T2w: 'desc-brain_T2w'
-  GM: 'label-GM_probseg'
-  WM: 'label-WM_probseg'
 
 
 
@@ -117,8 +97,6 @@ std_template_name: 'MNI152NLin6Asym'
 run_cohort: 
 run_iter: 
 
-#this is the iter which is exported into templateflow format
-max_iters: 8
 
 
 resample_init_template: False #set this True to resample init template to below dims 

@@ -154,16 +154,16 @@ rule get_final_xfm:
     input:
         template=expand(
             rules.apply_template_update.output['template'],
-            iteration=config['max_iters'],
+            iteration=config['num_iters'],
             channel=channels[0],
         ),
         affine=expand(
             rules.reg_to_template.output['affine_xfm_ras'],
-            iteration=config['max_iters']
+            iteration=config['num_iters']
         ),
         warp=expand(
             rules.reg_to_template.output['warp']
-            iteration=config['max_iters']
+            iteration=config['num_iters']
         ),
     output:
         bids(
@@ -186,16 +186,16 @@ rule get_final_inv_xfm:
     input:
         template=expand(
             rules.apply_template_update.output['template'],
-            iteration=config['max_iters'],
+            iteration=config['num_iters'],
             channel=channels[0],
         ),
         affine=expand(
             rules.reg_to_template.output['affine_xfm_ras'],
-            iteration=config['max_iters']
+            iteration=config['num_iters']
         ),
         warp=expand(
             rules.reg_to_template.output['invwarp']
-            iteration=config['max_iters']
+            iteration=config['num_iters']
         ),
     output:
         bids(
@@ -217,8 +217,8 @@ rule get_final_inv_xfm:
 rule get_final_warped:
     input:
         expand(
-            rules.apply_template_update.output['template'],
-            iteration=config['max_iters'],
+            rules.reg_to_template.output['warped'],
+            iteration=config['num_iters'],
             channel=channels,
             allow_missing=True,
         )
