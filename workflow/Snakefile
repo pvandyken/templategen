@@ -18,28 +18,12 @@ include: 'rules/cohort_template_to_std.smk'
 rule all_composite_warps:
     input:
         expand(
-            bids(
-                output_dir/"template",
-                datatype="xfm",
-                mode="image",
-                from_="individual",
-                to="{template}",
-                suffix="xfm.nii.gz"
-                **inputs.subj_wildcards,
-            ),
-            subjects=inputs.subjects,
-        ),
-        expand(
-            bids(
-                output_dir/"template",
-                datatype="xfm",
-                mode="image",
-                from_="{template}",
-                to="individual",
-                suffix="xfm.nii.gz"
-                **inputs.subj_wildcards,
-            ),
-            subjects=inputs.subjects,
+            [
+                rules.get_final_xfm.output,
+                rules.get_final_inv_xfm.output,
+                rules.get_final_warped.output,
+            ],
+            subjects=inputs.subjects
         ),
     
     
