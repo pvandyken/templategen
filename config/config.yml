@@ -9,13 +9,17 @@ pybids_inputs:
       desc: FA
       space: T1w
       scope: prepdwi_recon
+      datatype: dwi
     wildcards:
     - subject
 
+pybids_outputs:
+  FA:
+    suffix: FA.nii.gz
 
 targets_by_analysis_level:
   participant:
-  - all_composite_warps
+  - ''
   group:
   - ''
 analysis_levels: &analysis_levels

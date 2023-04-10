@@ -1,20 +1,29 @@
 rule cp_nii_to_templateflow_naming:
     input: 
-        template =  lambda wildcards: 'results/cohort-{cohort}/iter_{iteration}/template_{channel}.nii.gz'.format(iteration=config['num_iters'],channel=wildcards.channel,cohort=cohorts[int(wildcards.cohort_ind)-1])
+        expand(
+            rules.apply_template_update.output,
+            iteration=config['num_iters'],
+            channel=channels,
+        )
     output:
-        template =  'results/tpl-{name}/cohort-{{cohort_ind}}/tpl-{name}_cohort-{{cohort_ind}}_res-{res}_{{channel}}.nii.gz'.format(name=config['template_name'],res=config['resolution_index'])
+        [
+            bids(
+                output_dir/"templateflow/tpl-{name}",
+                prefix="tpl-{name}",
+                res="{res}",
+                **wcards
+            ).format(
+                name=config['template_name'],
+                res=config['resolution_index'],
+            )
+            for wcards in output_templates
+        ]
     group: 'tf'
-    shell: 'cp {input} {output}'
+    run:
+        for src, dest in zip(input, output):
+            sh.copyfile(src, dest)
 
 
-rule gen_brainmask_from_brain:
-    input:
-        t1w =  'results/tpl-{name}/cohort-{{cohort_ind}}/tpl-{name}_cohort-{{cohort_ind}}_res-{res}_T1w.nii.gz'.format(name=config['template_name'],res=config['resolution_index'])
-    output:
-        mask =  'results/tpl-{name}/cohort-{{cohort_ind}}/tpl-{name}_cohort-{{cohort_ind}}_res-{res}_desc-brain_mask.nii.gz'.format(name=config['template_name'],res=config['resolution_index'])
-    group: 'tf'
-    container: config['singularity']['prepdwi']
-    shell: 'fslmaths {input} -bin {output}'
 
 rule create_template_json:
     input: 
@@ -25,5 +34,5 @@ rule create_template_json:
         subjects = subjects
     group: 'tf'
     output:
-        json = 'results/tpl-{name}/template_description.json'
+        json = output_dir/'templateflow/tpl-{name}/template_description.json'
     script: '../scripts/create_template_description_json.py'

@@ -67,7 +67,7 @@ def get_entity_filters(filters):
 
 output_warps = [
     bids(
-        output_dir,
+        output_dir/"template",
         **{
             **get_entity_filters(config['pybids_inputs'][channel]["filters"]),
             **inputs[channel].wildcards,
@@ -78,4 +78,15 @@ output_warps = [
     for channel in channels
 ]
 
-#get channels using keys in in_images
+output_templates = [
+    {
+        **get_entity_filters(config['pybids_inputs'][channel]["filters"]),
+        "space": "{template}",
+        "suffix": config['pybids_inputs'][channel]['filters']['suffix'] + ''.join(Path(inputs[channel].path).suffixes)
+    } if channel not in config['pybids_outputs'] else {
+        **config['pybids_outputs'],
+        "space": "{template}",
+    }
+    for channel in channels
+
+]

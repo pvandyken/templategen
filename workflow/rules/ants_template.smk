@@ -72,7 +72,7 @@ rule avg_warped:
 rule avg_inverse_warps:
     input:
         warps = expand(
-            rules.reg_to_template.output['invwarp'],
+            rules.reg_to_template.output['warp'],
             subject=inputs.subjects,
             allow_missing=True
         ),
