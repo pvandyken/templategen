@@ -1,6 +1,6 @@
 #assumes that templateflow templates are linked in resources folder
-init_template:
-  FA: /cvmfs/soft.computecanada.ca/easybuild/software/2020/avx2/Compiler/gcc9/fsl/6.0.4/fsl/data/standard/FMRIB58_FA_1mm.nii.gz
+# init_template:
+#   FA: /cvmfs/soft.computecanada.ca/easybuild/software/2020/avx2/Compiler/gcc9/fsl/6.0.4/fsl/data/standard/FMRIB58_FA_1mm.nii.gz
 
 pybids_inputs:
   FA:
@@ -12,6 +12,7 @@ pybids_inputs:
       datatype: dwi
     wildcards:
     - subject
+    - session
 
 pybids_outputs:
   FA:
@@ -21,7 +22,7 @@ targets_by_analysis_level:
   participant:
   - ''
   group:
-  - ''
+  - 'reference_warps'
 analysis_levels: &analysis_levels
 - group
 - participant
@@ -72,6 +73,14 @@ parse_args:
       (Note, this option must be explicitly set to resume an interrupted
       workflow.)
     default: ''
+  --reference-templates:
+    help: |
+      Transforms to and from the derived template will be calculated for all
+      templates listed here in group mode. Values must be valid `tpl` keys from
+      `templateflow`
+    default:
+      - MNI152NLin6Asym
+    nargs: "+"
 
 
 
@@ -101,6 +110,9 @@ std_template_name: 'MNI152NLin6Asym'
 run_cohort: 
 run_iter: 
 
+init_template:
+  FA: /scratch/knavynde/jhp/derivatives/tpl-incl/tpl-study/tpl-study_FA.nii.gz
+
 
 
 resample_init_template: False #set this True to resample init template to below dims 
@@ -117,6 +129,7 @@ singularity:
   prepdwi: '/project/6050199/akhanf/singularity/bids-apps/khanlab_prepdwi_latest.sif'  
   ants:  '/project/6050199/akhanf/singularity/kaczmarj_ants_2.3.4.sif'
   itksnap:  '/project/6050199/akhanf/singularity/pyushkevich_itksnap_latest.sif'
+  python: 'docker://khanlab/pythondeps-snakedwi:v0.2.0'
 
 ants:
   dim: 3

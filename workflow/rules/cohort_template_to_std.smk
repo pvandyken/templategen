@@ -2,26 +2,46 @@
 # these rules are for registering the newly-generated cohort templates back 
 # to the initial (MNI152) template, and composing the warps from template-building
 
+rule get_avg_channel:
+    input:
+        inputs["FA"].expand(
+            rules.get_final_warped.output,
+            template=config["template_name"]
+        )
+    output:
+        bids(
+            output_dir/"tpl-{template}",
+            prefix="tpl-{template}",
+            suffix="{channel,FA}.nii.gz",
+        )
+    container: config['singularity']['itksnap']
+    shell:
+        "c3d {input} -mean -o {output}"
+        
+
+def _get_reference_template(wcards):
+    return tflow.get(
+        template=wcards["ref_template"],
+        resolution="02",
+        desc=None,
+        suffix="T1w",
+        extension=".nii.gz",
+    )
 
 rule reg_cohort_template_to_std:
     input:
-        std_template = [config['init_template'][channel] for channel in channels],
+        std_template = _get_reference_template,
         cohort_template = expand(
-            rules.apply_template_update.output,
-            iteration=config['num_iters'],
-            channel=channels
+            rules.get_avg_channel.output,
+            channel=channels,
+            allow_missing=True,
         )
     output:
-        warp = work/'reg_to_{std_template}/to-{std_template}_1Warp.nii.gz',
-        invwarp = work/'reg_to_{std_template}/to-{std_template}_1InverseWarp.nii.gz',
-        affine_xfm_ras = work'reg_to_{std_template}/to-{std_template}_affine_ras.txt',
-        warped = expand(
-            work/'reg_to_{std_template}/to-{std_template}_WarpedToTemplate_{channel}.nii.gz',
-            channel=channels,
-            allow_missing=True
-        )
-    log: 'logs/reg_cohort_template_to_std/{std_template}.log'
-    benchmark:  'benchmark/reg_cohort_template_to_std/{std_template}.tsv'
+        warp = tempout('reg_to_{ref_template}/to-{ref_template}_from-{template}_1Warp.nii.gz'),
+        invwarp = tempout('reg_to_{ref_template}/to-{template}_from-{ref_template}_1InverseWarp.nii.gz'),
+        affine_xfm_ras = tempout('reg_to_{ref_template}/to-{ref_template}_from-{template}_affine_ras.txt'),
+    log: 'logs/reg_cohort_template_to_std/{ref_template}.{template}.log'
+    benchmark:  'benchmark/reg_cohort_template_to_std/{ref_template}.{template}.tsv'
     threads: 8
     container: config['singularity']['itksnap']
     resources:
@@ -32,27 +52,69 @@ rule reg_cohort_template_to_std:
     params:
         input_fixed_moving = lambda wildcards, input: [
             f'-i {fixed} {moving}'
-            for fixed,moving in zip(input.std_template, input.cohort_template)
-        ],
-        input_moving_warped = lambda wildcards, input, output: [
-            f'-rm {moving} {warped}'
-            for moving,warped in zip(input.cohort_template,output.warped)
+            for fixed,moving in it.zip_longest(
+                itx.always_iterable(input.std_template),
+                input.cohort_template
+            )
         ],
     shell: 
         #affine first
-        'greedy -d 3 -threads {threads} -a -m NCC 2x2x2 '
-        '{params.input_fixed_moving} -o {output.affine_xfm_ras} '
-        '-ia-image-centers -n 100x50x10 &> {log} && '
+        """
+        greedy -d 3 -threads {threads} -a -m NCC 2x2x2 -n 100x50x10 -ia-image-centers \\
+            {params.input_fixed_moving} -o {output.affine_xfm_ras} \\
+            &> {log}
+        """
         #then deformable:
-        'greedy -d 3 -threads {threads} -m NCC 2x2x2 '
-        '{params.input_fixed_moving} -it {output.affine_xfm_ras} '
-        '-o {output.warp} -oinv {output.invwarp} -n 100x50x10 &>> {log} && '
+        """
+        greedy -d 3 -threads {threads} -m NCC 2x2x2 -n 100x50x10 \\
+            {params.input_fixed_moving} -it {output.affine_xfm_ras} \\
+            -o {output.warp} -oinv {output.invwarp} &>> {log}
+        """
 
-        #and finally warp the moving image
-        'greedy -d 3 -threads {threads} -rf {input.std_template[0]} '
-        '{params.input_moving_warped} -r {output.warp} '
-        '{output.affine_xfm_ras} &>> {log}'
+rule get_template_xfm:
+    input:
+        template=_get_reference_template,
+        affine=rules.reg_cohort_template_to_std.output['affine_xfm_ras'],
+        warp=rules.reg_cohort_template_to_std.output['warp'],
+    output:
+        bids(
+            output_dir/"tpl-{template}",
+            prefix="tpl-{template}",
+            mode="image",
+            from_="{template}",
+            to="{ref_template}",
+            suffix="xfm.nii.gz",
+        )
 
+    container: config['singularity']['itksnap']
+    shell: 
+        """
+        greedy -d 3 -rf {input.template} \\
+            -r {input.warp} {input.affine} -rc {output}
+          """
+
+
+rule get_template_inv_xfm:
+    input:
+        template=_get_reference_template,
+        affine=rules.reg_cohort_template_to_std.output['affine_xfm_ras'],
+        warp=(rules.reg_cohort_template_to_std.output['invwarp']),
+    output:
+        bids(
+            output_dir/"tpl-{template}",
+            prefix="tpl-{template}",
+            mode="image",
+            from_="{ref_template}",
+            to="{template}",
+            suffix="xfm.nii.gz",
+        )
+
+    container: config['singularity']['itksnap']
+    shell: 
+        """
+        greedy -d 3 -rf {input.template} \\
+            -r {input.affine},-1 {input.warp} -rc {output}
+        """
 
 
 def get_inputs_composite_subj_to_std (wildcards):

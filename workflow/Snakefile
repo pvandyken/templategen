@@ -9,25 +9,42 @@ wildcard_constraints:
 include: 'rules/setup.smk'
 # include: 'rules/reg_t2_to_t1.smk'
 include: 'rules/initialize_template.smk'
-include: 'rules/ants_template.smk'
+include: 'rules/create_template.smk'
+include: 'rules/qc.smk'
 # include: 'rules/templateflow.smk'
-# include: 'rules/cohort_template_to_std.smk'
+include: 'rules/cohort_template_to_std.smk'
 
 
+wcard_expand = {}
+if inputs.subjects:
+    wcard_expand["subject"] = inputs.subjects
+if inputs.sessions:
+    wcard_expand["session"] = inputs.sessions
 
 rule all_composite_warps:
     input:
-        expand(
+        inputs['FA'].expand(
             [
                 rules.get_final_xfm.output[0],
                 rules.get_final_inv_xfm.output[0],
                 rules.get_final_warped.output[0],
             ],
-            subject=inputs.subjects,
             template=config['template_name']
         ),
+        qc=rules.qc.output,
+        qc_app=rules.unpack_qc_app.output,
     
     
+rule reference_warps:
+    input:
+        expand(
+            (
+                rules.get_template_xfm.output[0],
+                rules.get_template_inv_xfm.output[0],
+            ),
+            template=config['template_name'],
+            ref_template=config["reference_templates"],
+        )
 
 
 if config['run_iter'] != None:
